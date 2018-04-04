@@ -502,3 +502,43 @@ def open_wxhb_buf2resp(buf):
     logger.debug('[红包领取结果]错误码={},详细信息:{}'.format(res.ret_code,res.res.str))
     return (res.ret_code,res.res.str)
 
+# 发送emoji表情
+def send_emoji_req2buf(wxid, file_name, game_type, content):
+    #protobuf组包
+    req = mm_pb2.send_emoji_req(
+        login = mm_pb2.LoginInfo(
+            aesKey =  Util.sessionKey,
+            uin = Util.uin,
+            guid = define.__GUID__ + '\0',          #guid以\0结尾
+            clientVer = define.__CLIENT_VERSION__,
+            androidVer = define.__ANDROID_VER__,
+            unknown = 0,
+        ),
+        tag2 = 1,
+        emoji = mm_pb2.send_emoji_req.emoji_info(
+            animation_id = file_name,                                          # emoji 加密文件名                   
+            tag2 = 0,
+            tag3 = random.randint(1, 9999),
+            tag4 = mm_pb2.send_emoji_req.emoji_info.TAG4(tag1 = 0),
+            tag5 = 1,
+            to_wxid = wxid,
+            game_ext = '<gameext type="{}" content="{}" ></gameext>'.format(game_type, content),        
+            tag8 = '',
+            utc = '{}'.format(Util.get_utc() * 1000 + random.randint(1, 999)),
+            tag11 = 0,
+        ),
+        tag4 = 0,
+    )
+    #组包
+    return pack(req.SerializeToString(), 175)
+
+# 发送emoji表情响应
+def send_emoji_buf2resp(buf,to_wxid):
+    res = mm_pb2.send_emoji_resp()
+    res.ParseFromString(UnPack(buf))
+    if not res.res.code:                                                            # emoji发送成功
+        # 发送记录存入数据库
+        Util.insert_msg_to_db(res.res.svrid, Util.get_utc(), Util.wxid, to_wxid, 47, res.res.file_name)
+    else:                                                                           # emoji发送失败
+        logger.info('emoji发送失败, 错误码={}'.format(res.res.code), 11)
+    return res.res.code

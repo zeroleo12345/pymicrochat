@@ -135,22 +135,39 @@ def aesDecrypt(src, key):
 
 # HTTP短链接发包
 def mmPost(cgi, data):
-    conn = http.client.HTTPConnection(ip['shortip'], timeout=10)
-    conn.request("POST", cgi, data, headers)
-    response = conn.getresponse().read()
-    conn.close()
+    ret = False
+    retry = 3
+    response = b''
+    while not ret and retry > 0:
+        retry = retry - 1
+        try:
+            conn = http.client.HTTPConnection(ip['shortip'], timeout=3)
+            conn.request("POST", cgi, data, headers)
+            response = conn.getresponse().read()
+            conn.close()
+            ret = True
+        except Exception as e:
+            if 'timed out' == str(e):
+                logger.info('{}请求超时,正在尝试重新发起请求,剩余尝试次数{}次'.format(cgi, retry), 11)
+            else:
+                raise RuntimeError('mmPost Error!!!')    
     return response
 
 # HTTP短链接发包
 def post(host, api, data, head=''):
-    conn = http.client.HTTPConnection(host, timeout=2)
-    if head:
-        conn.request("POST", api, data, head)
-    else:
-        conn.request("POST", api, data)
-    response = conn.getresponse().read()
-    conn.close()
-    return response
+    try:
+        conn = http.client.HTTPConnection(host, timeout=2)
+        if head:
+            conn.request("POST", api, data, head)
+        else:
+            conn.request("POST", api, data)
+        response = conn.getresponse().read()
+        conn.close()
+        return response
+    except:
+        logger.info('{}请求失败!'.format(api) ,11)
+        return b''
+    
 
 # 退出程序
 def ExitProcess():
@@ -170,7 +187,7 @@ def GenEcdhKey():
     if platform.architecture()[0] == '64bit':
         lib = loader("./microchat/dll/ecdh_x64.dll")
     else:
-        lib = loader("../microchat/dll/ecdh_x32.dll")
+        lib = loader("./microchat/dll/ecdh_x32.dll")
     # 申请内存
     priKey = bytes(bytearray(2048))                                                         # 存放本地DH私钥
     pubKey = bytes(bytearray(2048))                                                         # 存放本地DH公钥

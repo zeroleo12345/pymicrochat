@@ -226,7 +226,12 @@ message ManualAuthDeviceRequest
 			optional mmStr  tag4 		= 4;
 		}
 		optional __Tag2 tag2 = 2;
-		optional mmStr 	tag3 = 3;
+		message TAG3
+		{
+			optional string tag1 		= 1;
+			optional string tag2 		= 2;
+		}
+		optional TAG3 	tag3 = 3;
 		optional mmStr 	tag4 = 4;
 		optional mmStr 	tag5 = 5;
 		optional int32 	tag6 = 6;
@@ -518,4 +523,45 @@ message open_wxhb_resp
 	optional int32     cmd                  = 5;
 	optional int32	   ret_code				= 6;					//错误码 416:需要实名认证
 	optional string    ret_msg				= 7;					//错误信息
+}
+
+//发送emoji请求
+message send_emoji_req
+{
+	optional LoginInfo login 				= 1;					//登录信息
+	optional int32     tag2                 = 2;
+	message emoji_info
+	{
+		optional string    animation_id = 1;						//emoji加密文件名;发送游戏emoji时该参数无效
+		optional int32     tag2      	= 2;
+		optional int32     tag3      	= 3;
+		message TAG4
+		{
+			optional int32 tag1 = 1;
+		}
+		optional TAG4      tag4      	= 4;
+		optional int32 	   tag5      	= 5;
+		optional string    to_wxid   	= 6;
+		optional string    game_ext  	= 7;						//游戏参数:<gameext type="2" content="8" ></gameext>
+		optional string    tag8      	= 8;
+		optional string    utc       	= 9;						//ms
+		optional int32    tag11      	= 11;
+	}
+	optional emoji_info emoji				= 3;					//发送表情详细信息
+	optional int32     tag4                 = 4;
+}
+
+//发送emoji响应
+message send_emoji_resp
+{
+	message result
+	{
+		optional int32     code      	= 1;						//错误码;返回0表示发送成功
+		optional int32     tag2      	= 2;						//小游戏随机种子?
+		optional int32     tag3      	= 3;						//小游戏随机种子?
+		optional string    file_name    = 4;
+		optional int32     sync_key     = 5;						//sync_key中id
+		optional int32     svrid      	= 6;						//服务器唯一id
+	}
+	optional result res						= 3;					//发送结果
 }

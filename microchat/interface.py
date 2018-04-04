@@ -117,6 +117,18 @@ def receive_and_open_wxhb(channelId,msgType,nativeUrl,sendId,inWay = 1,ver='v1.0
         return business.open_wxhb_buf2resp(ret_bytes)
     return (-1,'')
 
+# 发emoji表情：file_name为emoji加密文件名; game_type=0直接发送emoji; game_type=1无视file_name参数,接收方播放石头剪刀布动画;其余game_type值均为投骰子动画;
+# content只在game_type不为0即发送游戏表情时有效;content取1-3代表剪刀、石头、布;content取4-9代表投骰子1-6点;
+def send_emoji(wxid, file_name, game_type, content):
+    # 组包
+    send_data = business.send_emoji_req2buf(wxid, file_name, game_type, content)
+    # 发包
+    ret_bytes = Util.mmPost('/cgi-bin/micromsg-bin/sendemoji', send_data)
+    logger.debug('send_emoji返回数据:' + Util.b2hex(ret_bytes))
+    # 解包
+    return business.send_emoji_buf2resp(ret_bytes,wxid)
+
+
 # 初始化python模块
 def InitAll():
     # Util.initLog()
