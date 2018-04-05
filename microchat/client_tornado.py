@@ -65,8 +65,17 @@ class ChatClient(object):
         self.stream = yield TCPClient().connect(self.host, self.port)
         self.send_heart_beat()
         # self.stream.read_until(b'\n', self.__recv)
-        self.longin()
+        self.login()
         self.stream.read_bytes(16, self.__recv_header)
+
+    @gen.coroutine
+    def restart(self, host, port):
+        self.host = host
+        self.port = port
+        self.stream.set_close_callback(self.__closed)
+
+    def __closed(self):
+        self.start()
 
     def send_heart_beat(self):
         logger.debug(
@@ -84,7 +93,7 @@ class ChatClient(object):
         else:
             return False
 
-    def longin(self):
+    def login(self):
         (login_buf, self.login_aes_key) = business.login_req2buf(
             self.usr_name, self.passwd)
         send_data = self.pack(CMDID_MANUALAUTH_REQ, login_buf)
@@ -185,7 +194,7 @@ class ChatClient(object):
                             #logger.error('请再次登录!')
                              # 授权后,尝试自动重新登陆
                             logger.info('正在重新登陆........................',14)
-                            self.longin()
+                            self.login()
                         elif code:
                             # raise RuntimeError('登录失败!')  #登录失败
                             self.ioloop.stop()
