@@ -73,6 +73,7 @@ class ChatClient(object):
         self.host = host
         self.port = port
         self.stream.set_close_callback(self.__closed)
+        yield self.stream.close()
 
     def __closed(self):
         self.start()
@@ -107,7 +108,6 @@ class ChatClient(object):
         (len_ack, _, _) = struct.unpack('>I4xII', data)
         if self.recv_cb:
             self.recv_cb(data)
-        # yield self.stream.read_until(b'\n', self.__recv)
         yield self.stream.read_bytes(len_ack - 16, self.__recv_payload)
 
     @gen.coroutine
@@ -124,7 +124,6 @@ class ChatClient(object):
                     (ret, buf) = self.unpack(buf)
                 #刷新心跳
                 self.send_heart_beat()
-        # yield self.stream.read_until(b'\n', self.__recv)
         yield self.stream.read_bytes(16, self.__recv_header)
 
     @gen.coroutine
