@@ -3,7 +3,7 @@ from tornado.tcpclient import TCPClient
 from tornado.ioloop import IOLoop
 from tornado.ioloop import PeriodicCallback
 import struct
-from .dns_ip import get_ips
+from . import dns_ip
 from . import interface
 from . import Util
 from . import business
@@ -29,6 +29,7 @@ CMDID_PUSH_ACK = 24  #推送通知
 CMDID_REPORT_KV_REQ = 1000000190  #通知服务器消息已接收
 
 #解包结果
+UNPACK_NEED_RESTART = -2  # 需要切换DNS重新登陆
 UNPACK_FAIL = -1  #解包失败
 UNPACK_CONTINUE = 0  #封包不完整,继续接收数据
 UNPACK_OK = 1  #解包成功
@@ -59,17 +60,22 @@ class ChatClient(object):
         self.seq = 1
         self.login_aes_key = b''
         self.recv_data = b''
+        self.heartbeat_callback = None
 
     @gen.coroutine
     def start(self):
         self.stream = yield TCPClient().connect(self.host, self.port)
         self.send_heart_beat()
-        # self.stream.read_until(b'\n', self.__recv)
+        self.heartbeat_callback = PeriodicCallback(self.send_heart_beat, 1000 * HEARTBEAT_TIMEOUT)
+        self.heartbeat_callback.start()                 # start scheduler
         self.login()
         self.stream.read_bytes(16, self.__recv_header)
 
     @gen.coroutine
     def restart(self, host, port):
+        if self.heartbeat_callback:
+            # 停止心跳
+            self.heartbeat_callback.stop()
         self.host = host
         self.port = port
         self.stream.set_close_callback(self.__closed)
@@ -79,12 +85,9 @@ class ChatClient(object):
         self.start()
 
     def send_heart_beat(self):
-        logger.debug(
-            'last_heartbeat_time={},Util.get_utc() - last_heartbeat_time = {}'.
-            format(self.last_heartbeat_time,
-                   Util.get_utc() - self.last_heartbeat_time))
+        logger.debug('last_heartbeat_time = {}, elapsed_time = {}'.format(self.last_heartbeat_time, Util.get_utc() - self.last_heartbeat_time))
         #判断是否需要发送心跳包
-        if (Util.get_utc() - self.last_heartbeat_time) > HEARTBEAT_TIMEOUT:
+        if (Util.get_utc() - self.last_heartbeat_time) >= HEARTBEAT_TIMEOUT:
             #长链接发包
             send_data = self.pack(CMDID_NOOP_REQ)
             self.stream.write(send_data)
@@ -119,11 +122,17 @@ class ChatClient(object):
         if data != b'':
             (ret, buf) = self.unpack(self.recv_data)
             if UNPACK_OK == ret:
-                (ret, buf) = self.unpack(buf)
                 while UNPACK_OK == ret:
                     (ret, buf) = self.unpack(buf)
                 #刷新心跳
                 self.send_heart_beat()
+            if UNPACK_NEED_RESTART == ret:                # 需要切换DNS重新登陆
+                if dns_ip.dns_retry_times > 0:
+                    self.restart(dns_ip.fetch_longlink_ip(),443)
+                    return
+                else:
+                    logger.error('切换DNS尝试次数已用尽,程序即将退出............')
+                    self.stop()
         yield self.stream.read_bytes(16, self.__recv_header)
 
     @gen.coroutine
@@ -190,10 +199,12 @@ class ChatClient(object):
                     elif CMDID_MANUALAUTH_REQ == cmd_id:  #登录响应
                         code = business.login_buf2Resp(buf[16:len_ack],self.login_aes_key)
                         if -106 == code:
-                            #logger.error('请再次登录!')
-                             # 授权后,尝试自动重新登陆
-                            logger.info('正在重新登陆........................',14)
+                            # 授权后,尝试自动重新登陆
+                            logger.info('正在重新登陆........................', 14)
                             self.login()
+                        elif -301 == code:
+                            logger.info('正在重新登陆........................', 14)
+                            return (UNPACK_NEED_RESTART, b'')
                         elif code:
                             # raise RuntimeError('登录失败!')  #登录失败
                             self.ioloop.stop()
@@ -204,11 +215,9 @@ class ChatClient(object):
 
 
 def start(wechat_usrname, wechat_passwd):
+    interface.init_all()
     ioloop = IOLoop.instance()
-    _, szlong_ip = get_ips()
-    interface.InitAll()
     tcp_client = ChatClient(ioloop=ioloop, usr_name=wechat_usrname, passwd=wechat_passwd, recv_cb=recv_data_handler,
-                            host=szlong_ip[0], port=443)
+                            host=dns_ip.fetch_longlink_ip(), port=443)
     tcp_client.start()
-    PeriodicCallback(tcp_client.send_heart_beat, 1000*60).start()  # start scheduler
     ioloop.start()

@@ -12,6 +12,7 @@ import platform
 import subprocess
 import sqlite3
 from . import define
+from . import dns_ip
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_pkcs1_v1_5
@@ -40,9 +41,6 @@ CONTACT_TYPE_CHATROOM = 2  # 群聊
 CONTACT_TYPE_OFFICAL = 4  # 公众号
 CONTACT_TYPE_BLACKLIST = 8  # 黑名单中的好友
 CONTACT_TYPE_DELETED = 16  # 已删除的好友
-
-# 长短链接默认地址;调用GetDNS()接口后会存放服务器解析的长短链接ip
-ip = {'longip': 'long.weixin.qq.com', 'shortip': 'short.weixin.qq.com'}
 
 # ECDH key
 EcdhPriKey = b''
@@ -107,16 +105,14 @@ def aes(src, key):
 # 先压缩后RSA加密
 def compress_and_rsa(src):
     compressData = zlib.compress(src)
-    rsakey = RSA.construct(
-        (int(define.__LOGIN_RSA_VER158_KEY_N__, 16), define.__LOGIN_RSA_VER158_KEY_E__))
+    rsakey = RSA.construct((int(define.__LOGIN_RSA_VER158_KEY_N__, 16), define.__LOGIN_RSA_VER158_KEY_E__))
     cipher = Cipher_pkcs1_v1_5.new(rsakey)
     encrypt_buf = cipher.encrypt(compressData)
     return encrypt_buf
 
 # 不压缩RSA2048加密
 def rsa(src):
-    rsakey = RSA.construct(
-        (int(define.__LOGIN_RSA_VER158_KEY_N__, 16), define.__LOGIN_RSA_VER158_KEY_E__))
+    rsakey = RSA.construct((int(define.__LOGIN_RSA_VER158_KEY_N__, 16), define.__LOGIN_RSA_VER158_KEY_E__))
     cipher = Cipher_pkcs1_v1_5.new(rsakey)
     encrypt_buf = cipher.encrypt(src)
     return encrypt_buf
@@ -141,7 +137,7 @@ def mmPost(cgi, data):
     while not ret and retry > 0:
         retry = retry - 1
         try:
-            conn = http.client.HTTPConnection(ip['shortip'], timeout=3)
+            conn = http.client.HTTPConnection(dns_ip.fetch_shortlink_ip(), timeout=3)
             conn.request("POST", cgi, data, headers)
             response = conn.getresponse().read()
             conn.close()

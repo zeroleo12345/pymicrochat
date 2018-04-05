@@ -38,6 +38,8 @@ def auto_recive_hb(msg):
         if not ret_code:
             logger.info('自动抢红包成功!')
             logger.debug('红包详细信息:' + info)
+        else:
+            logger.info('红包详细信息:' + info, 13)
     except:
         logger.info('自动抢红包失败!')
     return

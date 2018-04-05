@@ -8,6 +8,7 @@ import urllib
 import xmltodict
 import zlib
 from . import define
+from . import dns_ip
 from . import mm_pb2
 from .plugin import plugin
 from . import Util
@@ -182,9 +183,24 @@ def login_buf2Resp(buf, login_aes_key):
     loginRes.result.code = -1
     loginRes.ParseFromString(UnPack(buf, login_aes_key))
 
+    # 更新DNS信息
+    for dns_info in loginRes.dns.redirect.real_host:
+        if dns_info.host == 'long.weixin.qq.com':                                                   # 更新长链接信息
+            dns_ip.long_ip = []                                                                     # 清空旧的长链接ip池
+            for ip_info in loginRes.dns.ip.longlink:
+                if  dns_info.redirect == ip_info.host.replace('\x00', ''):
+                    logger.debug('更新长链接DNS:[{}:{}]'.format(dns_info.redirect, ip_info.ip.replace('\x00', '')))
+                    dns_ip.long_ip.append(ip_info.ip.replace('\x00', ''))                           # 保存长链接ip
+        elif dns_info.host == 'short.weixin.qq.com':                                                # 更新短链接信息
+            dns_ip.short_ip = []                                                                    # 清空旧的短链接ip池
+            for ip_info in loginRes.dns.ip.shortlink:
+                if dns_info.redirect == ip_info.host.replace('\x00', ''):
+                    logger.debug('更新短链接DNS:[{}:{}]'.format(dns_info.redirect, ip_info.ip.replace('\x00', '')))
+                    dns_ip.short_ip.append(ip_info.ip.replace('\x00', ''))                          # 保存短链接ip
+
     # 登录异常处理
     if -301 == loginRes.result.code:                                                                # DNS解析失败,请尝试更换idc
-        logger.error('登陆结果:\ncode:{}\n请尝试更换DNS重新登陆!'.format(loginRes.result.code))                    
+        logger.error('登陆结果:\ncode:{}\n即将尝试切换DNS重新登陆!'.format(loginRes.result.code))                    
     elif -106 == loginRes.result.code:                                                              # 需要在IE浏览器中滑动操作解除环境异常/扫码、短信、好友授权(滑动解除异常后需要重新登录一次)
         logger.error('登陆结果:\ncode:{}\nError msg:{}\n'.format(loginRes.result.code, loginRes.result.err_msg.msg[loginRes.result.err_msg.msg.find('<Content><![CDATA[')+len('<Content><![CDATA['):loginRes.result.err_msg.msg.find(']]></Content>')]))
         # 打开IE,完成授权

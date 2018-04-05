@@ -318,7 +318,39 @@ message ManualAuthResponse
 	}
 	optional AccountInfo accountInfo = 4;                   //登录成功后返回账号信息
 	
-	optional bytes dnsInfo          = 5;					//dns信息
+	message dns_info
+	{
+		message redirect_info
+		{
+			optional int32 cnt				= 1;				//host cnt
+			message real_host_info
+			{
+				optional string host  		= 1;				//host
+				optional string redirect  	= 2;				//redirect_host
+			}
+			repeated real_host_info real_host = 2;					
+		}
+		optional redirect_info redirect    			= 1;		//域名重定向信息
+		message ip_info
+		{
+			optional int32 longlink_ip_cnt	= 1;				//长链接ip池数量				
+			optional int32 shortlink_ip_cnt	= 2;				//短链接ip池数量
+			message longlink_ip_info
+			{
+				optional string ip  	= 3;					//ip
+				optional string host  	= 4;					//host
+			}
+			repeated longlink_ip_info longlink = 3;				//长链接ip池
+			message shortlink_ip_info
+			{
+				optional string ip  	= 3;					//ip
+				optional string host  	= 4;					//host
+			}
+			repeated shortlink_ip_info shortlink = 4;			//短链接ip池
+		}
+		optional ip_info ip							= 3;		//长短链接ip
+	}
+	optional dns_info dns					= 5;				//dns信息
 }
 
 //新设备第一次登录初始化请求

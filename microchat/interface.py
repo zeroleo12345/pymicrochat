@@ -12,8 +12,9 @@ from . import dns_ip
 from . import business
 from . import Util
 from . import mm_pb2
-from .plugin.logger_wrapper import logger
+from .plugin.logger_wrapper import logger, ColorDefine
 from google.protobuf.internal import decoder, encoder
+from . import logo_bingo
 
 
 # 获取长短链接Ip
@@ -130,10 +131,11 @@ def send_emoji(wxid, file_name, game_type, content):
 
 
 # 初始化python模块
-def InitAll():
-    # Util.initLog()
-    Util.ip = GetDns()
+def init_all():
+    #配置logger
+    logger.config("microchat", out=2)
+    logo_bingo()
     # 初始化ECC key
     if not Util.GenEcdhKey():
-        logger.info('初始化ECC Key失败!')
+        logger.error('初始化ECC Key失败!')
         Util.ExitProcess()
