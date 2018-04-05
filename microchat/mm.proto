@@ -449,7 +449,7 @@ message new_send_app_msg_req
 		optional int32 type				= 5;						//app_msg type == 5
 		optional string content			= 6;						//appmsg具体信息
 		optional int32 utc				= 7;
-		optional string client_id		= 8;						//to_wxid+randomin+T+utc
+		optional string client_id		= 8;						//to_wxid+randomint+T+utc
 		optional int32 tag10 			= 10;						//unknown just set 3
 		optional int32 tag11			= 11;						//unknown just set 0
 	}
@@ -552,6 +552,33 @@ message open_wxhb_resp
 	}
 	optional TAG1 tag1 						= 1;					//没啥用
 	optional mmStr 	   res					= 2;					//红包领取结果
+	optional int32     cmd                  = 5;
+	optional int32	   ret_code				= 6;					//错误码 416:需要实名认证
+	optional string    ret_msg				= 7;					//错误信息
+}
+
+//获取红包详细信息请求
+message qry_detail_wxhb_req
+{
+	optional LoginInfo login 				= 1;					//登录信息
+	optional int32     cmd                  = 2;
+	optional int32	   tag3					= 3;
+	optional mmStr	   info					= 4;					//红包信息:需要nativeUrl和sendid
+}
+
+//获取红包详细信息响应
+message qry_detail_wxhb_resp
+{
+	message TAG1
+	{
+		optional int32 tag1 = 1;
+		message TAG1
+		{
+			optional string tag1 = 1;
+		}
+	}
+	optional TAG1 tag1 						= 1;					//没啥用
+	optional mmStr 	   res					= 2;					//红包领取信息
 	optional int32     cmd                  = 5;
 	optional int32	   ret_code				= 6;					//错误码 416:需要实名认证
 	optional string    ret_msg				= 7;					//错误信息

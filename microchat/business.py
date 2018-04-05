@@ -518,6 +518,35 @@ def open_wxhb_buf2resp(buf):
     logger.debug('[红包领取结果]错误码={},详细信息:{}'.format(res.ret_code,res.res.str))
     return (res.ret_code,res.res.str)
 
+# 查看红包信息请求
+def qry_detail_wxhb_req2buf(nativeUrl, sendId, limit = 11, offset = 0, ver='v1.0'):
+    #protobuf组包
+    wxhb_info = 'limit={}&nativeUrl={}&offset={}&sendId={}&ver={}'.format(limit, urllib.parse.quote(nativeUrl), offset, sendId, ver)
+    req = mm_pb2.qry_detail_wxhb_req(
+        login = mm_pb2.LoginInfo(
+            aesKey =  Util.sessionKey,
+            uin = Util.uin,
+            guid = define.__GUID__ + '\0',          #guid以\0结尾
+            clientVer = define.__CLIENT_VERSION__,
+            androidVer = define.__ANDROID_VER__,
+            unknown = 0,
+        ),
+        cmd = -1,
+        tag3 = 1,
+        info = mm_pb2.mmStr(
+            len = len(wxhb_info),
+            str = wxhb_info,
+        )
+    )
+    return pack(req.SerializeToString(),1585)
+
+# 查看红包信息响应
+def qry_detail_wxhb_buf2resp(buf):
+    res = mm_pb2.qry_detail_wxhb_resp()
+    res.ParseFromString(UnPack(buf))
+    logger.debug('[红包领取信息]错误码={},详细信息:{}'.format(res.ret_code,res.res.str))
+    return (res.ret_code,res.res.str)
+
 # 发送emoji表情
 def send_emoji_req2buf(wxid, file_name, game_type, content):
     #protobuf组包
