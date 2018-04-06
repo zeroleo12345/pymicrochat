@@ -17,11 +17,6 @@ from google.protobuf.internal import decoder, encoder
 from . import logo_bingo
 
 
-# 获取长短链接Ip
-def GetDns():
-    (ipShort,ipLong)  = dns_ip.get_ips()
-    return {'longip':ipLong[0], 'shortip':ipShort[0]}
-
 # 登录,参数为账号,密码
 def Login(name, password):
     # 组包
@@ -138,6 +133,26 @@ def send_emoji(wxid, file_name, game_type, content):
     logger.debug('send_emoji返回数据:' + Util.b2hex(ret_bytes))
     # 解包
     return business.send_emoji_buf2resp(ret_bytes,wxid)
+
+# 收款
+def transfer_operation(invalid_time, trans_id, transaction_id, user_name):
+    # 组包
+    send_data = business.transfer_operation_req2buf(invalid_time, trans_id, transaction_id, user_name)
+    # 发包
+    ret_bytes = Util.mmPost('/cgi-bin/mmpay-bin/transferoperation', send_data)
+    logger.debug('transfer_operation返回数据:' + Util.b2hex(ret_bytes))
+    # 解包
+    return business.transfer_operation_buf2resp(ret_bytes)
+
+# 查询转账结果
+def transfer_query(invalid_time, trans_id, transfer_id):
+    # 组包
+    send_data = business.transfer_query_req2buf(invalid_time, trans_id, transfer_id)
+    # 发包
+    ret_bytes = Util.mmPost('/cgi-bin/mmpay-bin/transferquery', send_data)
+    logger.debug('transfer_query返回数据:' + Util.b2hex(ret_bytes))
+    # 解包
+    return business.transfer_query_buf2resp(ret_bytes)
 
 
 # 初始化python模块

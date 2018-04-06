@@ -624,3 +624,38 @@ message send_emoji_resp
 	}
 	optional result res						= 3;					//发送结果
 }
+
+//收款请求
+message transfer_operation_req
+{
+	optional LoginInfo login 				= 1;					//登录信息
+	optional int32     tag2                 = 2;
+	optional int32     tag3                 = 3;
+	optional mmStr	   info					= 4;					//转账信息:需要op_code, invalid_time, trans_id, 转账人wxid和transfer_id, 签名使用TDES加密算法(可不签)
+}
+
+//收款结果
+message transfer_operation_resp
+{
+	optional mmStr 	   res					= 2;					//收款结果详细信息
+	optional int32	   ret_code				= 6;					//错误码 
+	optional string    ret_msg				= 7;					//错误信息
+}
+
+//查询转账记录请求
+message transfer_query_req
+{
+	optional LoginInfo login 				= 1;					//登录信息
+	optional int32     tag2                 = 2;
+	optional int32     tag3                 = 3;
+	optional mmStr	   info					= 4;					//转账信息:需要invalid_time, trans_id和transfer_id, 签名使用TDES加密算法(可不签)
+}
+
+//查询转账记录结果
+message transfer_query_resp
+{
+	optional mmStr 	   res					= 2;					//收款结果详细信息
+	optional int32	   ret_code				= 6;					//错误码 
+	optional string    ret_msg				= 7;					//错误信息
+}
+

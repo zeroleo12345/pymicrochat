@@ -10,7 +10,7 @@ from .logger_wrapper import logger
 
 # 测试命令
 state = lambda i: '已开启' if i else '已关闭'
-TEST_KEY_WORD = ('测试分享链接', '测试好友列表','图灵机器人','自动通过好友申请','自动抢红包','测试扔骰子')
+TEST_KEY_WORD = ('测试分享链接', '测试好友列表','图灵机器人','自动通过好友申请','自动抢红包/自动收款','测试扔骰子')
 # 测试开关
 TEST_STATE    = [1,1,1,1,1,1]
 
@@ -42,7 +42,7 @@ def test(msg):
         TEST_STATE[3] =  not TEST_STATE[3]
         interface.new_send_msg(msg.from_id.id, '{}({})'.format(TEST_KEY_WORD[3],state(TEST_STATE[3])).encode(encoding="utf-8"))
         return False
-    elif TEST_KEY_WORD[4] == msg.raw.content or '4' == msg.raw.content:                                                             # 自动抢红包开关
+    elif TEST_KEY_WORD[4] == msg.raw.content or '4' == msg.raw.content:                                                             # 自动抢红包/自动收款开关
         TEST_STATE[4] =  not TEST_STATE[4]
         interface.new_send_msg(msg.from_id.id, '{}({})'.format(TEST_KEY_WORD[4],state(TEST_STATE[4])).encode(encoding="utf-8"))
         return False
@@ -51,7 +51,7 @@ def test(msg):
         interface.send_emoji(msg.from_id.id,'68f9864ca5c0a5d823ed7184e113a4aa','1','9')
         interface.send_emoji(msg.from_id.id,'514914788fc461e7205bf0b6ba496c49','2','9')
         interface.send_emoji(msg.from_id.id,'9a21c57defc4974ab5b7c842e3232671','1','9')
-        return False     
+        return False
     return True
 
 # 处理消息

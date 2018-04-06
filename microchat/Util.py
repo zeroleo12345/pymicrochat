@@ -13,7 +13,7 @@ import subprocess
 import sqlite3
 from . import define
 from . import dns_ip
-from Crypto.Cipher import AES
+from Crypto.Cipher import AES, DES3
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_pkcs1_v1_5
 from google.protobuf.internal import decoder, encoder
@@ -363,3 +363,21 @@ def find_str(src,start,end):
     except:
         pass
     return ''
+
+# 转账相关请求参数签名算法
+def SignWith3Des(src):
+    # 首先对字符串取MD5
+    raw_buf = hashlib.md5(src.encode()).digest()
+    # 对16字节的md5做bcd2ascii
+    bcd_to_ascii = bytearray(32)
+    for i in range(len(raw_buf)):
+        bcd_to_ascii[2*i]   = raw_buf[i]>>4
+        bcd_to_ascii[2*i+1] = raw_buf[i] & 0xf
+    # hex_to_bin转换加密key
+    key = bytes.fromhex('3ECA2F6FFA6D4952ABBACA5A7B067D23')
+    # 对32字节的bcd_to_ascii做Triple DES加密(3DES/ECB/NoPadding)
+    des3 = DES3.new(key, DES3.MODE_ECB)
+    enc_bytes = des3.encrypt(bcd_to_ascii)
+    # bin_to_hex得到最终加密结果
+    enc_buf = ''.join(["%02X" % x for x in enc_bytes]).strip()
+    return enc_buf

@@ -587,3 +587,65 @@ def send_emoji_buf2resp(buf,to_wxid):
     else:                                                                           # emoji发送失败
         logger.info('emoji发送失败, 错误码={}'.format(res.res.code), 11)
     return res.res.code
+
+# 收款请求
+def transfer_operation_req2buf(invalid_time, trans_id, transaction_id, user_name):
+    #protobuf组包
+    transfer_operation = 'invalid_time={}&op=confirm&total_fee=0&trans_id={}&transaction_id={}&username={}'.format(invalid_time, trans_id, transaction_id, user_name)
+    transfer_operation_with_sign = 'invalid_time={}&op=confirm&total_fee=0&trans_id={}&transaction_id={}&username={}&WCPaySign={}'.format(invalid_time, trans_id, transaction_id, user_name, Util.SignWith3Des(transfer_operation))
+    req = mm_pb2.transfer_operation_req(
+        login = mm_pb2.LoginInfo(
+            aesKey =  Util.sessionKey,
+            uin = Util.uin,
+            guid = define.__GUID__ + '\0',          #guid以\0结尾
+            clientVer = define.__CLIENT_VERSION__,
+            androidVer = define.__ANDROID_VER__,
+            unknown = 0,
+        ),
+        tag2 = 0,
+        tag3 = 1,
+        info = mm_pb2.mmStr(
+            len = len(transfer_operation_with_sign),
+            str = transfer_operation_with_sign,
+        )
+    )
+    #组包
+    return pack(req.SerializeToString(), 385)
+
+# 收款结果
+def transfer_operation_buf2resp(buf):
+    res = mm_pb2.transfer_operation_resp()
+    res.ParseFromString(UnPack(buf))
+    logger.debug('[收款结果]错误码={},详细信息:{}'.format(res.ret_code,res.res.str))
+    return (res.ret_code,res.res.str)   
+
+# 查询转账记录请求
+def transfer_query_req2buf(invalid_time, trans_id, transfer_id):
+    #protobuf组包
+    transfer_info = 'invalid_time={}&trans_id={}&transfer_id={}'.format(invalid_time, trans_id, transfer_id)
+    transfer_info_with_sign = 'invalid_time={}&trans_id={}&transfer_id={}&WCPaySign={}'.format(invalid_time, trans_id, transfer_id, Util.SignWith3Des(transfer_info))
+    req = mm_pb2.transfer_query_req(
+        login = mm_pb2.LoginInfo(
+            aesKey =  Util.sessionKey,
+            uin = Util.uin,
+            guid = define.__GUID__ + '\0',          #guid以\0结尾
+            clientVer = define.__CLIENT_VERSION__,
+            androidVer = define.__ANDROID_VER__,
+            unknown = 0,
+        ),
+        tag2 = 0,
+        tag3 = 1,
+        info = mm_pb2.mmStr(
+            len = len(transfer_info_with_sign),
+            str = transfer_info_with_sign,
+        )
+    )
+    #组包
+    return pack(req.SerializeToString(), 385)
+
+# 查询转账记录结果
+def transfer_query_buf2resp(buf):
+    res = mm_pb2.transfer_query_resp()
+    res.ParseFromString(UnPack(buf))
+    logger.debug('[查询转账记录]错误码={},详细信息:{}'.format(res.ret_code,res.res.str))
+    return (res.ret_code,res.res.str)
